@@ -13,6 +13,7 @@ from PIL import Image
 import requests
 from tkinter import simpledialog
 import pymsgbox
+import cv2
 
 root=Tk(className=" CONVERTING FILES".upper())
 root.config(bg="#324145")
@@ -94,14 +95,13 @@ class Converting_files:
     
     def img_pdf(self):
         try:
-            input_path = Path(filedialog.askopenfile(mode='r',title="Select JPG/PNG File Only.",
-                                                     filetypes=[("PNG FILES",'*.png'),("JPG Files","*.jpg")]).name)
+            input_path = filedialog.askopenfile(mode='r',title="Select JPG/PNG File Only.",
+                                                     filetypes=[("PNG FILES",'*.png'),("JPG Files","*.jpg")]).name
             output_folder = filedialog.askdirectory(title="Select The Folder To Save PDF.")
             if output_folder == "" or output_folder == None:
                 termcolor.cprint(text="No Output Folder Is Selected",color='red')
                 return
-            output_folder = Path(output_folder)
-            output_path = output_folder / (input_path.stem + ".pdf")
+            output_path = Path(output_folder) / (Path(input_path).stem + ".pdf")
             with open(output_path,'wb') as fo:
                 fo.write(img2pdf.convert(input_path))
             termcolor.cprint(text=f"File Is Saved On '{output_path}' ",color='green')
@@ -586,6 +586,31 @@ class Converting_files:
             case _:
                 print("Not Valid Enter Only 1 or 2 ")
                 return
+    def img_sketch(self):
+        try:
+            input_path = filedialog.askopenfile(mode='r',title="Select JPG/PNG File Only.",
+                                                     filetypes=[("PNG FILES",'*.png'),("JPG Files","*.jpg")]).name
+            output_folder = filedialog.askdirectory(title="Select The Folder To Save PDF.")
+            if output_folder == "" or output_folder == None:
+                termcolor.cprint(text="No Output Folder Is Selected",color='red')
+                return
+            output_path = Path(Path(output_folder) / (Path(input_path).stem + " sketch.png")).as_posix()
+
+            image = cv2.imread(filename=input_path)
+            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            inverted_gray_image = 255 - gray_image
+            blurred_image = cv2.GaussianBlur(inverted_gray_image, (21, 21), 0)
+            inverted_blurred_image = 255 - blurred_image
+            sketch_image = cv2.divide(gray_image, inverted_blurred_image, scale=256.0)
+            cv2.imwrite(filename=output_path,img=sketch_image)
+            
+            termcolor.cprint(text=f"File Is Saved On '{output_path}' ",color='green')
+
+        except AttributeError:
+            termcolor.cprint(text=f"No Input File Is Selected",color='red')
+        except Exception as e:
+            print(e)
+
     def refresh(self):
         try:  # if only internet connection is avilable the buttons will activate
             if requests.get("https://developer.ilovepdf.com/user#/all/all/task/last24h").status_code == 200:
@@ -645,5 +670,6 @@ finally:
     ALLBUTTONS(x=400,y=150,text="MERGE TEXT FILES",bcolor="#a0a832",fcolor="#141414",command=converting_files.merger_txt)
     ALLBUTTONS(x=0,y=200,text="ROTATE PDF BY ANGLE",bcolor="#a83232",fcolor="#141414",command=converting_files.rotate_pdf)
     ALLBUTTONS(x=0,y=250,text="MULTIPUL FILES",bcolor="#a83275",fcolor="#141414",command=converting_files.multiple_files)
+    ALLBUTTONS(x=200,y=250,text="IMG 2 SKETCH",bcolor="#a83275",fcolor="#141414",command=converting_files.img_sketch)
     ALLBUTTONS(x=400,y=250,text="Refresh",bcolor="#a83275",fcolor="#141414",command=converting_files.refresh)
 root.mainloop()
